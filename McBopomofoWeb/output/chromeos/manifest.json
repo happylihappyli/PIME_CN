@@ -1,0 +1,71 @@
+{
+  "name": "__MSG_manifestName__",
+  "version": "1.8.0",
+  "manifest_version": 3,
+  "description": "__MSG_manifestDesc__",
+  "default_locale": "en",
+  "content_scripts": [
+    {
+      "matches": ["*://*/*", "file://*/*"],
+      "js": ["content-script.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "bundle.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "64": "icons/icon64.png",
+    "128": "icons/icon128.png"
+  },
+  "input_components": [
+    {
+      "name": "__MSG_imeUS__",
+      "type": "ime",
+      "id": "org.openvanilla.mcbopomofo.us",
+      "indicator": "\u9EA5",
+      "description": "McBopomofo",
+      "language": "zh-TW",
+      "layouts": ["us"],
+      "options_page": "options.html"
+    },
+    {
+      "name": "__MSG_imeDvorak__",
+      "type": "ime",
+      "id": "org.openvanilla.mcbopomofo.us-dvorak",
+      "indicator": "\u9EA5",
+      "description": "McBopomofo",
+      "language": "zh-TW",
+      "layouts": ["us-dvorak"],
+      "options_page": "options.html"
+    },
+    {
+      "name": "__MSG_imeColmak__",
+      "type": "ime",
+      "id": "org.openvanilla.mcbopomofo.us-colemak",
+      "indicator": "\u9EA5",
+      "description": "McBopomofo",
+      "language": "zh-TW",
+      "layouts": ["us-colemak"],
+      "options_page": "options.html"
+    }
+  ],
+  "options_page": "options.html",
+  "permissions": [
+    "input",
+    "background",
+    "storage",
+    "notifications",
+    "tabs",
+    "contextMenus"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "commands": {
+    "toggle-chinese-convert": {
+      "suggested_key": "Alt+Shift+G",
+      "description": "__MSG_commandToggleChineseConvert__"
+    }
+  }
+}

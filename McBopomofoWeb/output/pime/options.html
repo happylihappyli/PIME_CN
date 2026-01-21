@@ -1,0 +1,152 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>小麥注音偏好設定</title>
+    <link rel="icon" type="image/x-icon" href="images/icon16.png">
+    <link rel="stylesheet" href="css/options.css">
+    <style>
+        body {
+            max-width: 900px;
+        }
+    </style>
+    <script src="js/options.js"></script>
+</head>
+
+<body>
+    <h1 id="options_title">小麥注音偏好設定</h1>
+    <table>
+        <tr>
+            <td class="option_title" id="keyboard_layout">鍵盤配置：</td>
+            <td>
+                <select id="layout" title="鍵盤配置">
+                    <option id="keyboard_layout_standard" value="Standard">標準</option>
+                    <option id="keyboard_layout_eten" value="ETen">倚天</option>
+                    <option id="keyboard_layout_hsu" value="Hsu">許氏</option>
+                    <option id="keyboard_layout_eten26" value="ETen26">倚天 26 鍵</option>
+                    <option id="keyboard_layout_hanyupinyin" value="HanyuPinyin">漢語拼音</option>
+                    <option id="keyboard_layout_ibm" value="IBM">IBM</option>
+                </select>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="option_title" id="candidate_font_size">選字窗字體大小：</td>
+            <td>
+                <select id="font_size" title="選字窗字體大小">
+                    <option id="font_size_10" value="10">10</option>
+                    <option id="font_size_12" value="12">12</option>
+                    <option id="font_size_14" value="14">14</option>
+                    <option id="font_size_16" value="16">16</option>
+                    <option id="font_size_18" value="18">18</option>
+                    <option id="font_size_20" value="20">20</option>
+                    <option id="font_size_22" value="22">22</option>
+                    <option id="font_size_24" value="24">24</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title" id="candidate_keys">選字按鍵：</td>
+            <td>
+                <select id="keys" title="選字按鍵">
+                    <option value="123456789">123456789</option>
+                    <option value="asdfghjkl">asdfghjkl</option>
+                    <option value="asdfzxcvb">asdfzxcvb</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title">選字按鍵数量：</td>
+            <td>
+                <select id="keys_count" title="選字按鍵">
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9" selected="selected">9</option>
+                </select>
+                <br />
+                <input type="checkbox" name="jk_key" id="jk_key"><label for="jk_key">使用 JK 按鍵在選字時移動游標</label>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title" id="select_candidate">選擇候選字：</td>
+            <td>
+                <input type="radio" name="select_phrase" value="before_cursor" id="before_cursor"
+                    checked="checked"><label for="before_cursor"
+                    id="select_candidate_before_cursor">游標之前（類似漢音輸入法）</label><br>
+                <input type="radio" name="select_phrase" value="after_cursor" id="after_cursor"><label
+                    for="after_cursor" id="select_candidate_after_cursor">游標之後（類似微軟新注音輸入法）</label><br>
+                <input type="checkbox" name="move_cursor" id="move_cursor"><label for="move_cursor"
+                    id="select_candidate_move_cursor">選字之後自動移動游標位置</label>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title" id="esc_key_title">ESC 按鍵：</td>
+            <td>
+                <input type="checkbox" name="esc_key" id="esc_key"><label for="esc_key" id="esc_key_label">ESC
+                    按鍵會清除整個輸入緩衝區的內容</label>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title" id="shift_key_title">Shift 按鍵：</td>
+            <td>
+                <input type="checkbox" name="shift_key" id="shift_key"><label for="shift_key" id="shift_key_label">使用
+                    Shift 按鍵切換中英文</label>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title" id="shift_letter_title">Shift +字母按鍵：</td>
+            <td>
+                <input type="radio" name="letters" value="uppercase_letters" id="uppercase_letters" checked="checked">
+                <label for="uppercase_letters" id="shift_letter_uppercase">輸入大寫字母</label><br>
+                <input type="radio" name="letters" value="lowercase_letters" id="lowercase_letters">
+                <label for="lowercase_letters" id="shift_letter_lowercase">輸入小寫字母</label>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title">Ctrl + Enter：</td>
+            <td>
+                <select id="ctrl_enter_option" title="按下 Ctrl 與 Enter 時的行為">
+                    <option value="0">不使用</option>
+                    <option value="1">輸入注音符號</option>
+                    <option value="2">輸入 HTML Ruby</option>
+                    <option value="3">輸入台灣點字</option>
+                    <option value="4">輸入漢語拼音</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title">標點符號：</td>
+            <td>
+                <input type="checkbox" name="repeated_punctuation_choose_candidate"
+                    id="repeated_punctuation_choose_candidate"><label
+                    for="repeated_punctuation_choose_candidate">重複按下標點符號，選擇下一個候選標點</label>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="option_title" id="system_behaviour_title">系統行為：</td>
+            <td>
+                <input type="checkbox" name="by_default_deactivated" id="by_default_deactivated"><label
+                    for="by_default_deactivated" id="by_default_deactivated_label">在 Windows 8 以上系統預設以英數方式啟動</label><br>
+                <input type="checkbox" name="beep_on_error" id="beep_on_error"><label for="beep_on_error"
+                    id="beep_on_error_label">錯誤時發出嗶聲提示</label><br>
+
+            </td>
+        </tr>
+        <tr>
+            <td class="option_title" id="others_title">其他：</td>
+            </td>
+            <td>
+                <p><a href="help.html">輔助說明</a><br>
+                    <a href="https://mcbopomofo.openvanilla.org/" target="_blank">小麥注音官方網站</a>
+                </p>
+            </td>
+        </tr>
+
+    </table>
+</body>
+
+</html>

@@ -1,0 +1,4 @@
+{
+  "cSpell.words": ["Bopomofo", "Cormen", "Unigrams", "vspans"],
+  "typescript.tsdk": "node_modules\\typescript\\lib"
+}

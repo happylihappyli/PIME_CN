@@ -21,6 +21,7 @@ from .rime_keyevent import translateKeyCode, translateModifiers, RELEASE_MASK
 from keycodes import * # for VK_XXX constants
 from textService import *
 
+import ctypes
 from ctypes import *
 import os
 import json
@@ -31,6 +32,8 @@ import math
 APP = "PIME"
 APP_VERSION = "0.01"
 CONFIG_FILE = APP + ".yaml"
+
+ID_ADD_PHRASE = 18
 
 user_dir = os.path.join(os.path.expandvars("%APPDATA%"), APP, RIME)
 first_run = not os.path.isdir(user_dir)
@@ -60,9 +63,16 @@ class RimeTextService(TextService):
 
     def __init__(self, client):
         TextService.__init__(self, client)
+        
+        # Removed pre-launch calculator as per user request to improve startup speed
+        # self.launchCalculator(hidden=True)
 
     def onActivate(self):
         TextService.onActivate(self)
+        
+        # Removed ensure calculator running logic
+        # self.launchCalculator(hidden=True)
+        
         self.createSession()
 
         if not self.style.display_tray_icon: return
@@ -150,6 +160,12 @@ class RimeTextService(TextService):
             self.removeButton("windows-mode-icon")
 
     def processKey(self, keyEvent, isUp = False):
+        try:
+            with open(os.path.join(os.path.expandvars("%TEMP%"), "pime_key_debug.log"), "a", encoding="utf-8") as f:
+                f.write(f"Key: {keyEvent.keyCode}, Up: {isUp}\n")
+        except:
+            pass
+
         self.createSession()
         # print("session", self.session_id.contents if self.session_id else None, rime)
 
@@ -158,8 +174,26 @@ class RimeTextService(TextService):
             input_text_bytes = rime.get_input(self.session_id)
             if input_text_bytes:
                 input_text = input_text_bytes.decode("UTF-8")
-                if input_text in ("js", "ujs"):
+                # Log input text for debugging
+                try:
+                    with open(os.path.join(os.path.expandvars("%TEMP%"), "pime_debug.log"), "a", encoding="utf-8") as f:
+                        f.write(f"Input: '{input_text}' (len: {len(input_text)})\n")
+                except:
+                    pass
+
+                if input_text.strip() in ("js", "ujs"):
                     self.launchCalculator()
+                    self.clear()
+                    return True
+
+                # Custom Launcher Configuration
+                if input_text.strip() == "uset":
+                    self.openLauncherConfig()
+                    self.clear()
+                    return True
+                
+                # Custom Launcher Trigger
+                if self.handleCustomLauncher(input_text.strip()):
                     self.clear()
                     return True
 
@@ -352,40 +386,176 @@ class RimeTextService(TextService):
         except:
             return None
 
-    def launchCalculator(self):
+    def get_cached_hwnd(self):
         try:
-            # curdir is python/input_methods/rime
-            # calculator.py is in python/
-            # Use __file__ to be sure about location
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            calc_script = os.path.normpath(os.path.join(current_dir, "../../calculator.py"))
+            # Use GetTempPathW to match C++ behavior exactly
+            buf = ctypes.create_unicode_buffer(1024)
+            ctypes.windll.kernel32.GetTempPathW(1024, buf)
+            temp_path = buf.value
             
-            if not os.path.exists(calc_script):
-                ctypes.windll.user32.MessageBoxW(0, f"Calculator script not found at:\n{calc_script}", "PIME Error", 0x10)
+            path = os.path.join(temp_path, "pime_calc_hwnd.txt")
+            if os.path.exists(path):
+                with open(path, "r") as f:
+                    hwnd_str = f.read().strip()
+                    hwnd = int(hwnd_str)
+                    if ctypes.windll.user32.IsWindow(hwnd):
+                        return hwnd
+        except:
+            pass
+        return None
+
+    cached_calc_path = None
+
+    def launchCalculator(self, hidden=False):
+        try:
+            # 1. Try file-based cached HWND (Most Reliable)
+            hwnd = self.get_cached_hwnd()
+            
+            # 2. Try FindWindow (Fallback)
+            if not hwnd:
+                # Use FindWindowW (Unicode) for better compatibility
+                hwnd = ctypes.windll.user32.FindWindowW("PIMECalculatorWindow", None)
+            
+            if hwnd:
+                if not hidden:
+                    # PostMessage is non-blocking and instant
+                    ctypes.windll.user32.PostMessageW(hwnd, 0x0401, 0, 0)
                 return
 
-            # Determine python executable
-            python_exe = sys.executable
-            # If sys.executable is PIMELauncher.exe or similar, we need to find actual python
-            if not python_exe or "python" not in os.path.basename(python_exe).lower():
-                # Try finding in exec_prefix
-                possible_w = os.path.join(sys.exec_prefix, "pythonw.exe")
-                possible = os.path.join(sys.exec_prefix, "python.exe")
-                
-                if os.path.exists(possible_w):
-                    python_exe = possible_w
-                elif os.path.exists(possible):
-                    python_exe = possible
-                else:
-                    # Fallback to PATH
-                    python_exe = "pythonw"
+            # If we are here, we need to launch the process.
+            # Use cached path if available
+            if self.cached_calc_path and os.path.exists(self.cached_calc_path):
+                 calc_exe = self.cached_calc_path
+            else:
+                # current_dir is python/input_methods/rime
+                current_dir = os.path.dirname(os.path.abspath(__file__))
 
-            # Launch
-            # usage of shell=False is standard, but if pythonw is just a command in PATH, it works.
-            subprocess.Popen([python_exe, calc_script])
+                # Try to find C++ Calculator executable
+                # Path relative to rime_ime.py: ../../../CppCalculator/CppCalculator.exe (SCons build)
+                # or ../../../CppCalculator/build/Release/CppCalculator.exe (CMake build)
+                
+                cpp_calc_scons = os.path.normpath(os.path.join(current_dir, "../../../CppCalculator/CppCalculator.exe"))
+                cpp_calc_cmake = os.path.normpath(os.path.join(current_dir, "../../../CppCalculator/build/Release/CppCalculator.exe"))
+                
+                # Additional check for installed PIME structure
+                # Installed structure: PIME/python/input_methods/rime/rime_ime.py
+                # CppCalculator should be at: PIME/CppCalculator/CppCalculator.exe
+                cpp_calc_installed = os.path.normpath(os.path.join(current_dir, "../../../CppCalculator/CppCalculator.exe"))
+                
+                paths_to_check = [cpp_calc_scons, cpp_calc_cmake, cpp_calc_installed]
+                # Remove duplicates
+                paths_to_check = list(dict.fromkeys(paths_to_check))
+
+                calc_exe = None
+                for p in paths_to_check:
+                    if os.path.exists(p):
+                        calc_exe = p
+                        self.cached_calc_path = p # Cache it!
+                        break
+                
+            if calc_exe:
+                # Allow any process to set foreground window (helps with focus stealing)
+                try:
+                    windll.user32.AllowSetForegroundWindow(-1)
+                except:
+                    pass
+
+                # Launch Logic
+                # If hidden=True, launch with --hidden argument
+                # If hidden=False, just launch normally (or with --show if we had that, but standard launch works)
+                # Note: If calculator is already running (hidden or not), 
+                # running it again will trigger the single instance check in C++ 
+                # and show the existing window.
+                
+                args = [calc_exe]
+                if hidden:
+                    args.append("--hidden")
+                
+                try:
+                    subprocess.Popen(args, creationflags=0x00000010)
+                except OSError:
+                    pass
+                return
+
+            # If we reach here, C++ calculator was not found.
+            if not hidden: # Only show error if user explicitly requested it
+                # Log only on failure
+                try:
+                    buf = ctypes.create_unicode_buffer(1024)
+                    ctypes.windll.kernel32.GetTempPathW(1024, buf)
+                    debug_log_path = os.path.join(buf.value, "pime_launch_error.txt")
+                    with open(debug_log_path, "a") as f:
+                        f.write(f"Launch failed. Paths checked: {paths_to_check}\n")
+                except:
+                    pass
+
+                msg = "C++ Calculator not found."
+                ctypes.windll.user32.MessageBoxW(0, msg, "PIME Error", 0x10)
 
         except Exception as e:
-            ctypes.windll.user32.MessageBoxW(0, f"Failed to launch calculator:\n{str(e)}", "PIME Error", 0x10)
+            if not hidden:
+                ctypes.windll.user32.MessageBoxW(0, f"Failed to launch calculator:\n{str(e)}", "PIME Error", 0x10)
+
+    def openSettings(self):
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            ps_script = os.path.join(current_dir, "settings.ps1")
+            
+            if os.path.exists(ps_script):
+                subprocess.Popen(["powershell", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps_script, "-UserDir", user_dir])
+            else:
+                # Fallback to original behavior if script missing
+                hwnd = windll.user32.FindWindowW("PIMELauncherWnd", None)
+                if hwnd:
+                    windll.user32.PostMessageW(hwnd, 0x0111, 1003, 0)
+        except Exception as e:
+            ctypes.windll.user32.MessageBoxW(0, f"Failed to open settings:\n{str(e)}", "PIME Error", 0x10)
+
+    def openLauncherConfig(self):
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            ps_script = os.path.join(current_dir, "launcher_config.ps1")
+            
+            if os.path.exists(ps_script):
+                # Run PowerShell script hidden, but the script itself will show a GUI form
+                subprocess.Popen(["powershell", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps_script])
+            else:
+                ctypes.windll.user32.MessageBoxW(0, f"Config script not found:\n{ps_script}", "PIME Error", 0x10)
+        except Exception as e:
+            ctypes.windll.user32.MessageBoxW(0, f"Failed to open config:\n{str(e)}", "PIME Error", 0x10)
+
+    def openAddPhrase(self):
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            ps_script = os.path.join(current_dir, "add_phrase.ps1")
+            
+            if os.path.exists(ps_script):
+                subprocess.Popen(["powershell", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps_script, "-UserDir", user_dir])
+            else:
+                ctypes.windll.user32.MessageBoxW(0, f"Script not found:\n{ps_script}", "PIME Error", 0x10)
+        except Exception as e:
+            ctypes.windll.user32.MessageBoxW(0, f"Failed to open:\n{str(e)}", "PIME Error", 0x10)
+
+    def handleCustomLauncher(self, input_text):
+        config_path = os.path.join(user_dir, "launcher.json")
+        if not os.path.exists(config_path):
+            return False
+            
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            
+            if input_text in config:
+                cmd = config[input_text]
+                if cmd.startswith("http://") or cmd.startswith("https://"):
+                    os.startfile(cmd)
+                else:
+                    subprocess.Popen(cmd, shell=True)
+                return True
+        except:
+            pass
+            
+        return False
         
     def onCommand(self, commandId, commandType):
         print("onCommand", commandId, commandType)
@@ -414,9 +584,9 @@ class RimeTextService(TextService):
         elif commandId == ID_SYNC:
             rime.sync_user_data()
         elif commandId == ID_SETTINGS:
-            hwnd = windll.user32.FindWindowW("PIMELauncherWnd", None)
-            if hwnd:
-                windll.user32.PostMessageW(hwnd, 0x0111, 1003, 0)
+            self.openSettings()
+        elif commandId == ID_ADD_PHRASE:
+            self.openAddPhrase()
         elif commandId == ID_DEPLOY:
             self.destroySession()
             rime.finalize()

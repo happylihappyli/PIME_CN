@@ -8,6 +8,7 @@
 #define IDC_BTN_TEXT_COLOR              1002
 #define IDC_BTN_BK_COLOR                1003
 #define IDC_CHECK_HORIZONTAL            1004
+#define IDI_PIME_LAUNCHER               105
 
 // Next default values for new objects
 // 

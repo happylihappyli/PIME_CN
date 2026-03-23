@@ -1,0 +1,18 @@
+env = Environment()
+
+# 配置编译选项
+if env['PLATFORM'] == 'win32':
+    # 使用 /MT 进行静态链接 CRT，避免依赖 VC Runtime DLL
+    env.Append(CCFLAGS=['/EHsc', '/W3', '/std:c++14', '/O2', '/MT'])
+    env.Append(CPPDEFINES=['_CRT_SECURE_NO_WARNINGS', '_WIN32_WINNT=0x0601'])
+    env.Append(LINKFLAGS=['/SUBSYSTEM:WINDOWS'])
+    env.Append(LIBS=['user32', 'gdi32', 'kernel32'])
+    # 如果是 MinGW 环境（SCons 有时在 Windows 上也会用 MinGW），则使用 -static
+    if 'gcc' in env['CC']:
+        env.Replace(CCFLAGS=['-std=c++14', '-O2', '-Wall', '-static'])
+        env.Replace(LINKFLAGS=['-mwindows', '-static'])
+else:
+    env.Append(CCFLAGS=['-std=c++14', '-O2', '-Wall', '-static'])
+
+# 指定目标和源文件
+env.Program(target='CppCalculator', source=['main.cpp'])

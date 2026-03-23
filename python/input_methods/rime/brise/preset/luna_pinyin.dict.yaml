@@ -19933,8 +19933,8 @@ use_preset_vocabulary: true
 皁	zao
 皂	zao
 皃	mao
-的	de	99.97%
-的	di	0.03%
+的	de	2000000000
+的	di	100
 皅	ba
 皅	pa
 皆	jie
@@ -28314,8 +28314,8 @@ use_preset_vocabulary: true
 郻	qiao
 郼	wei
 郼	yi
-都	dou	94.64%
-都	du	5.36%
+都	dou	100
+都	du	100
 郾	yan
 郿	mei
 鄀	ruo

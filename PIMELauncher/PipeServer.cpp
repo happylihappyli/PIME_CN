@@ -19,6 +19,7 @@
 
 #include "PipeServer.h"
 #include "PipeClient.h"
+#include "resource.h"
 #include <Windows.h>
 #include <windowsx.h>
 #include <ShlObj.h>
@@ -455,9 +456,13 @@ void PipeServer::createShellNotifyIcon() {
 	shellNotifyIconData_.uID = MAIN_SHELL_NOTIFY_ICON_ID;
 	shellNotifyIconData_.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE;
 	shellNotifyIconData_.uCallbackMessage = WM_SHELL_NOTIFY_ICON;
-	// auto hinstance = HINSTANCE(::GetModuleHandle(NULL));
-	// shellNotifyIconData_.hIcon = ::LoadIcon(hinstance, IDI_APPLICATION);
-	shellNotifyIconData_.hIcon = ::LoadIcon(NULL, IDI_APPLICATION);
+	// 加载自定义图标
+	auto hinstance = HINSTANCE(::GetModuleHandle(NULL));
+	shellNotifyIconData_.hIcon = ::LoadIcon(hinstance, MAKEINTRESOURCE(IDI_PIME_LAUNCHER));
+	// 如果加载失败，使用默认图标
+	if (shellNotifyIconData_.hIcon == NULL) {
+		shellNotifyIconData_.hIcon = ::LoadIcon(NULL, IDI_APPLICATION);
+	}
 
 	// FIXME: make this translatable later
 	wcscpy(shellNotifyIconData_.szTip, L"PIME Launcher");
@@ -481,7 +486,7 @@ void PipeServer::showPopupMenu() const {
 	::AppendMenu(hmenu, MF_STRING|MF_ENABLED|(debugEnabled ? MF_CHECKED : 0), ID_ENABLE_DEBUG_LOG, L"启用调试日志");
 	::AppendMenu(hmenu, MF_STRING | MF_ENABLED, ID_SHOW_DEBUG_LOGS, L"显示调试日志");
 	::AppendMenu(hmenu, MF_STRING | MF_SEPARATOR, 0, 0);
-	::AppendMenu(hmenu, MF_STRING | MF_ENABLED, ID_RESTART_PIME_BACKENDS, L"重启 PIME");
+	::AppendMenu(hmenu, MF_STRING | MF_ENABLED, ID_RESTART_PIME_BACKENDS, L"Restart PIME");
     ::AppendMenu(hmenu, MF_STRING | MF_SEPARATOR, 0, 0);
     ::AppendMenu(hmenu, MF_STRING | MF_ENABLED, ID_SETTINGS, L"设置...");
 

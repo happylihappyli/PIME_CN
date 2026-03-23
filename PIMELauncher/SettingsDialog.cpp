@@ -51,12 +51,39 @@ static void ChooseColorHelper(HWND hwnd, COLORREF& color) {
     }
 }
 
+// 将对话框居中显示在父窗口或屏幕中央
+static void CenterDialog(HWND hwnd, HWND parent) {
+    RECT rcDlg, rcParent;
+    int x, y;
+
+    GetWindowRect(hwnd, &rcDlg);
+
+    if (parent != NULL && IsWindowVisible(parent)) {
+        // 居中于父窗口
+        GetWindowRect(parent, &rcParent);
+    } else {
+        // 居中于屏幕
+        rcParent.left = 0;
+        rcParent.top = 0;
+        rcParent.right = GetSystemMetrics(SM_CXSCREEN);
+        rcParent.bottom = GetSystemMetrics(SM_CYSCREEN);
+    }
+
+    // 计算居中位置
+    x = rcParent.left + (rcParent.right - rcParent.left - (rcDlg.right - rcDlg.left)) / 2;
+    y = rcParent.top + (rcParent.bottom - rcParent.top - (rcDlg.bottom - rcDlg.top)) / 2;
+
+    SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+}
+
 static INT_PTR CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
     case WM_INITDIALOG: {
         LoadSettings(g_settings);
         SetDlgItemInt(hwnd, IDC_EDIT_FONT_SIZE, g_settings.fontSize, FALSE);
         Button_SetCheck(GetDlgItem(hwnd, IDC_CHECK_HORIZONTAL), g_settings.horizontal ? BST_CHECKED : BST_UNCHECKED);
+        // 窗口居中显示
+        CenterDialog(hwnd, GetParent(hwnd));
         return TRUE;
     }
     case WM_COMMAND: {

@@ -5,7 +5,7 @@ env = Environment()
 
 # Common flags
 env.Append(CPPDEFINES=['UNICODE', '_UNICODE', 'WIN32', 'NOMINMAX', '_CRT_SECURE_NO_WARNINGS'])
-env.Append(CCFLAGS=['/EHsc', '/W3', '/std:c++14', '/MT'])
+env.Append(CCFLAGS=['/EHsc', '/W3', '/std:c++14', '/MT', '/utf-8'])
 
 # Include paths
 env.Append(CPPPATH=[
